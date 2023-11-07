@@ -1,18 +1,46 @@
+// ****************************************************************************
+//Jamiel Najera Morales, 19321
+// Proyecto03 - Electronica Digital 2
+// ****************************************************************************
+// Librerias
+// ****************************************************************************
 #include <Arduino.h>
+#include <Wire.h>
+// ****************************************************************************
+// Variables Globales
+// ****************************************************************************
 
-// put function declarations here:
-int myFunction(int, int);
+// ****************************************************************************
+// Prototipos de Funcion
+// ****************************************************************************
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+// ****************************************************************************
+// ISR vectores de interrupciones
+// ****************************************************************************
+// ****************************************************************************
+// Funcion setup (inicial)
+// ****************************************************************************
+void setup(){
+Wire.begin(); //Unirse al Bus I2C como master
+Serial.begin(115200); // Iniciar Serial con la CPU
+Serial.println("Se realizó la comunicació Serial 0");
+Serial2.begin(115200); //Iniciar Serial con la Tiva C
+Serial.println("Se realizó la comunicación Serial 2");
+
 }
+// ****************************************************************************
+// Loop principal
+// ****************************************************************************
+void loop(){
 
-void loop() {
-  // put your main code here, to run repeatedly:
+byte len = Wire.read();
+Wire.requestFrom(23, (int)len);
+
+while (Wire.available())
+{
+  char C = Wire.read();
+  Serial.print(C);
 }
+delay(1000);
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
 }
