@@ -1,11 +1,13 @@
 //***************************************************************************************************************************************
-/* Librería para el uso de la pantalla ILI9341 en modo 8 bits
- * Basado en el código de martinayotte - https://www.stm32duino.com/viewtopic.php?t=637
- * Adaptación, migración y creación de nuevas funciones: Pablo Mazariegos y José Morales
- * Con ayuda de: José Guerra
- * IE3027: Electrónica Digital 2 - 2019
+/*Proyecto 3 de Digital 2 
+ * Jamiel Nájera Morales
+ * 19321
  */
 //***************************************************************************************************************************************
+
+// **************************************************************************************************************************************
+// Librerias para la LCD
+// **************************************************************************************************************************************
 #include <stdint.h>
 #include <stdbool.h>
 #include <TM4C123GH6PM.h>
@@ -24,12 +26,36 @@
 #include "font.h"
 #include "lcd_registers.h"
 
+// **************************************************************************************************************************************
+// Librerias para la Tarjeta SD
+// **************************************************************************************************************************************
+#include <SPI.h>
+#include <SD.h>
+
+// **************************************************************************************************************************************
+// Definición de Pines de la LCD
+// **************************************************************************************************************************************
 #define LCD_RST PD_0
 #define LCD_CS PD_1
 #define LCD_RS PD_2
 #define LCD_WR PD_3
 #define LCD_RD PE_1
-int DPINS[] = {PB_0, PB_1, PB_2, PB_3, PB_4, PB_5, PB_6, PB_7};  
+int DPINS[] = {PB_0, PB_1, PB_2, PB_3, PB_4, PB_5, PB_6, PB_7};
+
+// **************************************************************************************************************************************
+// Definición de Pines para los botones
+// **************************************************************************************************************************************
+#define btn1 PF_4
+#define btn2 PF_0
+
+// **************************************************************************************************************************************
+// Definición de Pines para los Leds
+// **************************************************************************************************************************************
+
+#define ledR PF_1
+#define ledA PF_2
+#define ledV PF_3
+
 //***************************************************************************************************************************************
 // Functions Prototypes
 //***************************************************************************************************************************************
@@ -49,19 +75,37 @@ void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int 
 
 
 extern uint8_t fondo[];
+
+// **************************************************************************************************************************************
+// Variables Globales
+// **************************************************************************************************************************************
+String datoC;
+
+File archivo; 
+
+//Valores globales
+int valor = 0; 
+int dB = 0;
+
+
 //***************************************************************************************************************************************
-// Inicialización
+// Función Setup
 //***************************************************************************************************************************************
 void setup() {
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial2.begin(115200);
   GPIOPadConfigSet(GPIO_PORTB_BASE, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_STD_WPU);
   Serial.println("Inicio");
+  Serial.println("\n");
+  Serial.println("Se inicializó la comunicación Serial 0");
+  Serial.println("\n");
+  Serial2.println("Se inicializó la comunicación Serial 2");
   LCD_Init();
   LCD_Clear(0x00);
   
   FillRect(0, 0, 319, 206, 0x421b);
-  String text1 = "Super Mario World!";
+  String text1 = "Sensor de Temperatura";
   LCD_Print(text1, 20, 100, 2, 0xffff, 0x421b);
 //LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int columns, int index, char flip, char offset);
     
@@ -76,13 +120,33 @@ void setup() {
     LCD_Bitmap(x, 223, 16, 16, tile);
     x += 15;
  }
+
+   while (!Serial) {
+    ; 
+  }
+
+
+  Serial.print("Initializing SD card...");
+  pinMode(PA_3, OUTPUT);
+  SPI.setModule(0);
+
+  if (!SD.begin(PA_3)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
+
+  //Pines de Salida
+  pinMode(btn1, INPUT_PULLUP);
+  pinMode(btn2, INPUT_PULLUP);
+
   
 }
 //***************************************************************************************************************************************
 // Loop Infinito
 //***************************************************************************************************************************************
 void loop() {
- /* for(int x = 0; x <320-32; x++){
+ /*for(int x = 0; x <320-32; x++){
     delay(15);
     int anim2 = (x/35)%2;
     
@@ -129,6 +193,14 @@ void loop() {
     //V_line( x + 16, 20, 32, 0x421b);
   } 
 */
+
+  if(Serial2.available() > 0){
+    valor = Serial2.read(); 
+    Serial.println(valor);
+  }
+  
+  delay(1000);
+
 }
 //***************************************************************************************************************************************
 // Función para inicializar LCD
