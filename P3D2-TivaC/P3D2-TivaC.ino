@@ -59,6 +59,8 @@ int DPINS[] = {PB_0, PB_1, PB_2, PB_3, PB_4, PB_5, PB_6, PB_7};
 //***************************************************************************************************************************************
 // Functions Prototypes
 //***************************************************************************************************************************************
+
+//Lcd
 void LCD_Init(void);
 void LCD_CMD(uint8_t cmd);
 void LCD_DATA(uint8_t data);
@@ -76,16 +78,25 @@ void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int 
 
 extern uint8_t fondo[];
 
+//SD
+void writeSD(void);
+void readSD(void);
+
+//Botones
+void BTN1(void);
+
 // **************************************************************************************************************************************
 // Variables Globales
 // **************************************************************************************************************************************
-String datoC;
 
 File archivo; 
 
 //Valores globales
-int valor = 0; 
-int dB = 0;
+char valor [10]; 
+char tempe [10];
+
+int data = 1;
+int data2 = 2;
 
 
 //***************************************************************************************************************************************
@@ -94,32 +105,38 @@ int dB = 0;
 void setup() {
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
   Serial.begin(115200);
+  Serial1.begin(115200);
   Serial2.begin(115200);
+  
   GPIOPadConfigSet(GPIO_PORTB_BASE, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_STD_WPU);
   Serial.println("Inicio");
   Serial.println("\n");
   Serial.println("Se inicializó la comunicación Serial 0");
   Serial.println("\n");
-  Serial2.println("Se inicializó la comunicación Serial 2");
+  Serial.println("Se inicializó la comunicación Serial 1");
+  Serial.println("\n");
+  Serial.println("Se inicializó la comunicación Serial 2");
+  int data3 = 3;
+  Serial2.println(data3);
   LCD_Init();
   LCD_Clear(0x00);
   
-  FillRect(0, 0, 319, 206, 0x421b);
-  String text1 = "Sensor de Temperatura";
-  LCD_Print(text1, 20, 100, 2, 0xffff, 0x421b);
+  FillRect(0, 0, 320, 240, 0x421b);
+  String text1 = "Sensor de Temp.";
+  LCD_Print(text1, 35, 50, 2, 0xffff, 0x421b);
 //LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int columns, int index, char flip, char offset);
     
   //LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]);
   LCD_Bitmap(0, 0, 320, 240, fondo);
   
-  for(int x = 0; x <319; x++){
+  /*for(int x = 0; x <319; x++){
     LCD_Bitmap(x, 52, 16, 16, tile2);
     LCD_Bitmap(x, 68, 16, 16, tile);
     
     LCD_Bitmap(x, 207, 16, 16, tile);
     LCD_Bitmap(x, 223, 16, 16, tile);
     x += 15;
- }
+ }*/
 
    while (!Serial) {
     ; 
@@ -136,6 +153,7 @@ void setup() {
   }
   Serial.println("initialization done.");
 
+
   //Pines de Salida
   pinMode(btn1, INPUT_PULLUP);
   pinMode(btn2, INPUT_PULLUP);
@@ -146,40 +164,34 @@ void setup() {
 // Loop Infinito
 //***************************************************************************************************************************************
 void loop() {
- /*for(int x = 0; x <320-32; x++){
-    delay(15);
-    int anim2 = (x/35)%2;
-    
-    LCD_Sprite(x,100,16,24,planta,2,anim2,0,1);
-    V_line( x -1, 100, 24, 0x421b);
-    
-    //LCD_Bitmap(x, 100, 32, 32, prueba);
-    
-    int anim = (x/11)%8;
-    
 
-    int anim3 = (x/11)%4;
-    
-    LCD_Sprite(x, 20, 16, 32, mario,8, anim,1, 0);
-    V_line( x -1, 20, 32, 0x421b);
- 
-    //LCD_Sprite(x,100,32,32,bowser,4,anim3,0,1);
-    //V_line( x -1, 100, 32, 0x421b);
- 
- 
-    LCD_Sprite(x, 140, 16, 16, enemy,2, anim2,1, 0);
-    V_line( x -1, 140, 16, 0x421b);
-  
-    LCD_Sprite(x, 175, 16, 32, luigi,8, anim,1, 0);
-    V_line( x -1, 175, 32, 0x421b);
+int b1 = digitalRead (btn1);
+int b2 = digitalRead (btn2);
+
+
+ if(Serial2.available() > 0){
+    //valor = Serial2.readString(); 
+    Serial2.readBytesUntil('\n', tempe, sizeof(tempe) - 1);
   }
-  for(int x = 320-32; x >0; x--){
+
+  if (b1 == LOW){
+    BTN1();
+
+    
+    }
+
+  if (b2 == LOW){
+    writeSD();
+    }
+  
+
+  /*for(int x = 60; x > 0; x){
     delay(5);
     int anim = (x/11)%8;
-    int anim2 = (x/11)%2;
+    int anim2 = (x/10)%4;
     
-    LCD_Sprite(x,100,16,24,planta,2,anim2,0,0);
-    V_line( x + 16, 100, 24, 0x421b);
+    LCD_Sprite(x,50,33,48,megaman1,4,anim2,0,0);
+    //V_line( x - 1, 50, 48, 0x39);
     
     //LCD_Bitmap(x, 100, 32, 32, prueba);
     
@@ -191,14 +203,8 @@ void loop() {
 
     //LCD_Sprite(x, 20, 16, 32, mario,8, anim,0, 0);
     //V_line( x + 16, 20, 32, 0x421b);
-  } 
-*/
+  } */
 
-  if(Serial2.available() > 0){
-    valor = Serial2.read(); 
-    Serial.println(valor);
-  }
-  
   delay(1000);
 
 }
@@ -551,4 +557,68 @@ void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[],int 
     
     }
   digitalWrite(LCD_CS, HIGH);
+}
+
+//***************************************************************************************************************
+// Función ReadSD
+//***************************************************************************************************************
+
+void readSD(void){
+  archivo = SD.open("datos.txt");
+  if (archivo) {
+    Serial.println("El archivo contiene lo siguiente:");
+
+    // read from the file until there's nothing else in it:
+    while (archivo.available()) {
+      Serial.write(archivo.read());
+    }
+    // close the file:
+    archivo.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening datos.txt");
+  }
+  }
+
+//***************************************************************************************************************
+// Función WriteSD
+//***************************************************************************************************************
+void writeSD(void){
+ 
+    Serial2.println(data2);
+  
+    String datoC = valor;
+    
+    archivo = SD.open("datos.txt", FILE_WRITE);
+  
+  if (archivo) {
+    Serial.print("Writing to datos.txt...");
+    
+    archivo.println(datoC);
+    // close the file:
+    archivo.close();
+    Serial.println("done.");
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening datos.txt");
+  }
+  
+  }
+
+//***************************************************************************************************************
+// Función BTN1
+//***************************************************************************************************************
+
+void BTN1(void){
+
+  Serial2.println(data);
+
+  int numRec = atoi(tempe);
+  sprintf(valor, "%d", numRec);
+
+  String text1 = "La Temperatura Registrada es de: ";
+  String text2 = valor;
+  LCD_Print(text1, 25, 20, 1, 0xffff, 0x421b);
+  LCD_Print(text2, 150, 35, 2, 0xffff, 0x421b);
+     
 }
